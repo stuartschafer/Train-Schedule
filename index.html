@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<!-- This is the title that shows at the top of the webpage -->
+		<title>Train Scheduler</title>
+
+		<!-- This is the Twitter Bootstrap reference -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+		<!-- Link to jQuery -->
+		<script src="https://code.jquery.com/jquery.js"></script>
+
+		<!-- Link to Moment.js should go here -->
+		<script src="https://cdn.jsdelivr.net/momentjs/2.12.0/moment.min.js"></script>
+		
+		<!-- Link to Firebase -->
+		<script src="https://www.gstatic.com/firebasejs/3.7.4/firebase.js"></script>
+	</head>
+<body>
+
+<div class="container">
+<!-- This is the header at the top of the page -->
+	<div class="jumbotron" style="background-color: green; color: white">
+		<center>
+			<h1>Don't Miss the Train!</h1>
+			<h3>A Comprehensive Timetable of Trains and Times</h3>
+		</center>
+	</div>
+
+	<!-- This is the list of all the trains/times/schedules -->
+	<div class="row">
+		<div class="col-lg-12">
+			<div class="panel panel-primary">
+	            <div class="panel-heading">
+	 				<h3 class="panel-title"><strong>TRAIN SCHEDULE</strong></h3>
+				</div>
+				<section id="trainDatabase">
+					<table class="table" id="trainInfo">
+						<thead>
+							<tr>
+								<th>Train Name</th>
+							    <th>Destination</th>
+							    <th>Frequency (min)</th>
+								<th>Next Arrival</th>
+							    <th>Minutes Away</th>
+						    </tr>
+						</thead>
+						<tbody></tbody>
+				  	</table>
+				</section>
+			</div>	
+		</div>
+	</div>
+
+	<!-- This section allows the user to add train information -->
+	<div class="row">
+		<div class="col-md-6 col-md-offset-3">
+			<div class="panel panel-primary">
+				<div class="panel-heading">
+	 				<h3 class="panel-title"><strong>Add a Train</strong></h3>
+				</div>
+				<div class="panel-body">
+					<form>
+						<div class="form-group">
+							<label for="train-input">Train Name</label>
+							<input type="text" class="form-control" id="train-input">
+						</div>
+						<div class="form-group">
+							<label for="destination-input">Destination</label>
+							<input type="text" class="form-control" id="destination-input">
+						</div>
+						<div class="form-group">
+							<label for="train-input">First Train Time (HH:mm - military time)</label>
+							<input type="text" class="form-control" id="firstTrain-input">
+						</div>
+						<div class="form-group">
+							<label for="frequency-input">Frequency (min)</label>
+							<input type="text" class="form-control" id="frequency-input">
+						</div>
+						<button type="submit" id="submit" class="btn btn-primary">Submit</button>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+  // Initialize Firebase
+  var config = {
+    apiKey: "AIzaSyAExJIMKX5eIj3_bX-j8OsW4ddc7dLkmpM",
+    authDomain: "train-scheduler-6e8e3.firebaseapp.com",
+    databaseURL: "https://train-scheduler-6e8e3.firebaseio.com",
+    projectId: "train-scheduler-6e8e3",
+    storageBucket: "train-scheduler-6e8e3.appspot.com",
+    messagingSenderId: "197200256708"
+  };
+  firebase.initializeApp(config);
+
+  var database = firebase.database();
+
+  var nextArrival = "nextArrival";
+  var minutesAway = "minutesAway";
+
+
+// takes data from form and pushes to firebase
+$("#submit").on("click", function(event) {
+  	event.preventDefault();
+  	var train = $("#train-input").val().trim();
+  	var destination = $("#destination-input").val().trim();
+  	var firstTrain = $("#firstTrain-input").val().trim();
+  	var frequency = $("#frequency-input").val().trim();
+
+  	console.log(train);
+
+  	var newTrain = {
+  		train: train,
+  		destination: destination,
+  		firstTrain: firstTrain,
+  		frequency: frequency };
+
+  	database.ref().push(newTrain);
+
+  	$("#train-input").val("");
+  	$("#destination-input").val("");
+  	$("#firstTrain-input").val("");
+  	$("#frequency-input").val("");
+});
+
+database.ref().on("child_added", function(childSnapshot, prevChildKey) {
+
+	console.log(childSnapshot.val());
+
+	var train_name = childSnapshot.val().train;
+	var train_dest = childSnapshot.val().destination;
+	var train_freq = childSnapshot.val().frequency;
+	
+$("#trainInfo > tbody").append("<tr><td>" + train_name + "</td><td>" + train_dest + "</td><td>" +
+  train_freq + "</td><td>" + nextArrival + "</td><td>" + minutesAway + "</td></tr>");
+
+});
+
+</script>
+
+</body>
+</html>
