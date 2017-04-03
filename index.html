@@ -20,17 +20,18 @@
 
 <div class="container">
 <!-- This is the header at the top of the page -->
-	<div class="jumbotron" style="background-color: green; color: white">
+	<div class="jumbotron" style="background-color: green; color: white; padding: 10px">
 		<center>
 			<h1>Don't Miss the Train!</h1>
 			<h3>A Comprehensive Timetable of Trains and Times</h3>
+			<h4></h4>
 		</center>
 	</div>
 
 	<!-- This is the list of all the trains/times/schedules -->
 	<div class="row">
 		<div class="col-lg-12">
-			<div class="panel panel-primary">
+			<div class="panel panel-success">
 	            <div class="panel-heading">
 	 				<h3 class="panel-title"><strong>TRAIN SCHEDULE</strong></h3>
 				</div>
@@ -55,7 +56,7 @@
 	<!-- This section allows the user to add train information -->
 	<div class="row">
 		<div class="col-md-6 col-md-offset-3">
-			<div class="panel panel-primary">
+			<div class="panel panel-success">
 				<div class="panel-heading">
 	 				<h3 class="panel-title"><strong>Add a Train</strong></h3>
 				</div>
@@ -77,7 +78,7 @@
 							<label for="frequency-input">Frequency (min)</label>
 							<input type="text" class="form-control" id="frequency-input">
 						</div>
-						<button type="submit" id="submit" class="btn btn-primary">Submit</button>
+						<button type="submit" id="submit" class="btn btn-success">Submit</button>
 					</form>
 				</div>
 			</div>
@@ -86,21 +87,51 @@
 </div>
 
 <script>
-  // Initialize Firebase
-  var config = {
-    apiKey: "AIzaSyAExJIMKX5eIj3_bX-j8OsW4ddc7dLkmpM",
-    authDomain: "train-scheduler-6e8e3.firebaseapp.com",
-    databaseURL: "https://train-scheduler-6e8e3.firebaseio.com",
-    projectId: "train-scheduler-6e8e3",
-    storageBucket: "train-scheduler-6e8e3.appspot.com",
-    messagingSenderId: "197200256708"
-  };
-  firebase.initializeApp(config);
+	$("h4").html("The current time is " + moment().format("LT"));
 
-  var database = firebase.database();
+  	// Initialize Firebase
+  	var config = {
+    	apiKey: "AIzaSyAExJIMKX5eIj3_bX-j8OsW4ddc7dLkmpM",
+	    authDomain: "train-scheduler-6e8e3.firebaseapp.com",
+	    databaseURL: "https://train-scheduler-6e8e3.firebaseio.com",
+	    projectId: "train-scheduler-6e8e3",
+	    storageBucket: "train-scheduler-6e8e3.appspot.com",
+	    messagingSenderId: "197200256708"
+  	};
+  	firebase.initializeApp(config);
 
-  var nextArrival = "nextArrival";
-  var minutesAway = "minutesAway";
+  	// Set variables
+  	var database = firebase.database();
+
+  	var nextArrival = "nextArrival";
+  	var minutesAway = "minutesAway";
+  	var currentTime = moment().format("hh:mm");
+  	var firstTrain = "07:00";
+  	var firstTrainConverted = moment(firstTrain, "hh:mm").subtract(1, "years");
+  	var frequency = 8;
+
+	// console.log(currentTime);
+
+	// Difference between the times
+    // var timeTilTrain = moment().diff(moment(firstTrainConverted), "minutes");
+    // console.log("DIFFERENCE IN TIME: " + timeTilTrain);
+
+    // Time apart (remainder)
+    // var tRemainder = timeTilTrain % frequency;
+    // console.log(tRemainder);
+
+    // Minute Until Train
+    // var tMinutesTillTrain = frequency - tRemainder;
+    // console.log("MINUTES TILL TRAIN: " + tMinutesTillTrain);
+
+
+
+
+
+    // var diffTime = moment().diff(moment(firstTrainConverted), "d");
+    // console.log("DIFFERENCE IN TIME: " + diffTime);
+
+
 
 
 // takes data from form and pushes to firebase
@@ -111,7 +142,9 @@ $("#submit").on("click", function(event) {
   	var firstTrain = $("#firstTrain-input").val().trim();
   	var frequency = $("#frequency-input").val().trim();
 
-  	console.log(train);
+  	
+
+
 
   	var newTrain = {
   		train: train,
@@ -129,14 +162,20 @@ $("#submit").on("click", function(event) {
 
 database.ref().on("child_added", function(childSnapshot, prevChildKey) {
 
-	console.log(childSnapshot.val());
+	// console.log(childSnapshot.val());
+	var firstTrainConverted = moment(firstTrain, "hh:mm").subtract(1, "years");
+  	var timeTilTrain = moment().diff(moment(firstTrainConverted), "minutes");
+  	var tRemainder = timeTilTrain % frequency;
+  	var minutesTillTrain = frequency - tRemainder;
+  	// console.log("MINUTES TILL TRAIN: " + minutesTillTrain);
 
 	var train_name = childSnapshot.val().train;
 	var train_dest = childSnapshot.val().destination;
 	var train_freq = childSnapshot.val().frequency;
+	var train_minutes = childSnapshot.val().minutesTillTrain;
 	
 $("#trainInfo > tbody").append("<tr><td>" + train_name + "</td><td>" + train_dest + "</td><td>" +
-  train_freq + "</td><td>" + nextArrival + "</td><td>" + minutesAway + "</td></tr>");
+  train_freq + "</td><td>" + nextArrival + "</td><td>" + minutesTillTrain + "</td></tr>");
 
 });
 
