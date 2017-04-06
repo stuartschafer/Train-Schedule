@@ -15,6 +15,10 @@
 		
 		<!-- Link to Firebase -->
 		<script src="https://www.gstatic.com/firebasejs/3.7.4/firebase.js"></script>
+
+		<!-- This will update the webpage every 60 seconds -->
+		<meta http-equiv="refresh" content="60">
+
 	</head>
 <body>
 
@@ -64,19 +68,19 @@
 					<form>
 						<div class="form-group">
 							<label for="train-input">Train Name</label>
-							<input type="text" class="form-control" id="train-input">
+							<input type="text" class="form-control" id="train-input" placeholder="Please enter the name of the train here...">
 						</div>
 						<div class="form-group">
 							<label for="destination-input">Destination</label>
-							<input type="text" class="form-control" id="destination-input">
+							<input type="text" class="form-control" id="destination-input" placeholder="Please enter the city name...">
 						</div>
 						<div class="form-group">
-							<label for="train-input">First Train Time (HH:mm - military time)</label>
-							<input type="text" class="form-control" id="firstTrain-input">
+							<label for="train-input">First Train Time (HH:mm) - military time</label>
+							<input type="text" class="form-control" id="firstTrain-input" placeholder="Between 0000 for midnight and 2359 (11:59 PM)">
 						</div>
-						<div class="form-group">
+						<div class="form-group has-danger">
 							<label for="frequency-input">Frequency (min)</label>
-							<input type="text" class="form-control" id="frequency-input">
+							<input type="number" name="quantity" min="1" max="5" class="form-control" id="frequency-input" placeholder="Please enter how many minutes for each departure of the train...">
 						</div>
 						<button type="submit" id="submit" class="btn btn-success">Submit</button>
 					</form>
@@ -87,6 +91,8 @@
 </div>
 
 <script>
+
+	// This will display the curreenty time in the jumbotron area
 	$("h4").html("The current time is " + moment().format("LT"));
 
   	// Initialize Firebase
@@ -100,41 +106,16 @@
   	};
   	firebase.initializeApp(config);
 
-  	// Set variables
+  	// Setting the initial variables
   	var database = firebase.database();
-
-  	var nextArrival = "nextArrival";
-  	var minutesAway = "minutesAway";
-  	var currentTime = moment().format("hh:mm");
-  	var firstTrain = "07:00";
+  	var nextArrival = "";
+  	var minutesAway = "";
+  	var firstTrain = "";
   	var firstTrainConverted = moment(firstTrain, "hh:mm").subtract(1, "years");
-  	var frequency = 8;
-
-	// console.log(currentTime);
-
-	// Difference between the times
-    // var timeTilTrain = moment().diff(moment(firstTrainConverted), "minutes");
-    // console.log("DIFFERENCE IN TIME: " + timeTilTrain);
-
-    // Time apart (remainder)
-    // var tRemainder = timeTilTrain % frequency;
-    // console.log(tRemainder);
-
-    // Minute Until Train
-    // var tMinutesTillTrain = frequency - tRemainder;
-    // console.log("MINUTES TILL TRAIN: " + tMinutesTillTrain);
+  	var frequency = 0;
 
 
-
-
-
-    // var diffTime = moment().diff(moment(firstTrainConverted), "d");
-    // console.log("DIFFERENCE IN TIME: " + diffTime);
-
-
-
-
-// takes data from form and pushes to firebase
+// This takes data from the form and pushes to firebase
 $("#submit").on("click", function(event) {
   	event.preventDefault();
   	var train = $("#train-input").val().trim();
@@ -142,41 +123,68 @@ $("#submit").on("click", function(event) {
   	var firstTrain = $("#firstTrain-input").val().trim();
   	var frequency = $("#frequency-input").val().trim();
 
+  	// This section tests to make sure all elements are entered and checks to make sure they are valid
+	var currentTime = moment().format("hh:mm");
+	var firstTrainConverted = moment(firstTrain, "hh:mm").subtract(1, "years");
+  	var timeTilTrain = moment().diff(moment(firstTrainConverted), "minutes");
+
+  	console.log(timeTilTrain);
+
+  	if (train === "" || destination === "" || firstTrain === "" || frequency === "") { 
+  		alert("Please enter something for each line");
+  	}
+  	else if (frequency < 1) {
+  		alert("Please make sure the frequency is more than 1");
+  	}
+  	else if (firstTrain > 2359 || isNaN(timeTilTrain) === true) {
+  		alert("Please enter a valid time between 0 and 2359")
+  	}
+
+  	firebasePush();
   	
+});
 
+function firebasePush() {
+	// These get the values of what the user entered
+	var train = $("#train-input").val().trim();
+  	var destination = $("#destination-input").val().trim();
+  	var firstTrain = $("#firstTrain-input").val().trim();
+  	var frequency = $("#frequency-input").val().trim();
 
-
+  	// Setting variables for firebase to store them
   	var newTrain = {
   		train: train,
   		destination: destination,
   		firstTrain: firstTrain,
   		frequency: frequency };
 
+  	// Pushes (adds a new section for newTrain) in firebase
   	database.ref().push(newTrain);
 
+  	// Clears out the form if the user wants to enter a new train
   	$("#train-input").val("");
   	$("#destination-input").val("");
   	$("#firstTrain-input").val("");
   	$("#frequency-input").val("");
-});
+  }
 
+// This gets values from the firebase database
 database.ref().on("child_added", function(childSnapshot, prevChildKey) {
-
-	// console.log(childSnapshot.val());
-	var firstTrainConverted = moment(firstTrain, "hh:mm").subtract(1, "years");
-  	var timeTilTrain = moment().diff(moment(firstTrainConverted), "minutes");
-  	var tRemainder = timeTilTrain % frequency;
-  	var minutesTillTrain = frequency - tRemainder;
-  	// console.log("MINUTES TILL TRAIN: " + minutesTillTrain);
-
 	var train_name = childSnapshot.val().train;
 	var train_dest = childSnapshot.val().destination;
 	var train_freq = childSnapshot.val().frequency;
-	var train_minutes = childSnapshot.val().minutesTillTrain;
-	
-$("#trainInfo > tbody").append("<tr><td>" + train_name + "</td><td>" + train_dest + "</td><td>" +
-  train_freq + "</td><td>" + nextArrival + "</td><td>" + minutesTillTrain + "</td></tr>");
+	var train_minutes = childSnapshot.val().firstTrain;
 
+	var currentTime = moment().format("hh:mm");
+	var firstTrainConverted = moment(train_minutes, "hh:mm").subtract(1, "years");
+  	var timeTilTrain = moment().diff(moment(firstTrainConverted), "minutes");
+  	var tRemainder = timeTilTrain % train_freq;
+  	var minutesTillTrain = train_freq - tRemainder;
+  	var nextArrival = moment().add(minutesTillTrain, "minutes");
+  	var nextArrivalTime = moment(nextArrival).format("LT");
+
+// This writes to the HTML
+$("#trainInfo > tbody").append("<tr><td id='trainName'>" + train_name + "</td><td id='trainDest'>" + train_dest + "</td><td id='trainFreq'>" + "Every " + train_freq +" minutes" + "</td><td>" + nextArrivalTime + "</td><td>" + minutesTillTrain + "</td></tr>");
 });
 
 </script>
